@@ -281,11 +281,15 @@ NSString *const kEventListenersDictIDKey = @"id";
     [self.user removeSession];
 }
 
-
--(void)claimDevice:(NSString *)deviceID completion:(void (^)(NSError *))completion
+- (void)authorize
 {
     NSString *authorization = [NSString stringWithFormat:@"Bearer %@",self.token.accessToken];
     [self.manager.requestSerializer setValue:authorization forHTTPHeaderField:@"Authorization"];
+}
+
+-(void)claimDevice:(NSString *)deviceID completion:(void (^)(NSError *))completion
+{
+    [self authorize];
 
     NSMutableDictionary *params = [NSMutableDictionary new]; //[self defaultParams];
     params[@"id"] = deviceID;
@@ -317,8 +321,7 @@ NSString *const kEventListenersDictIDKey = @"id";
 
 -(void)getDevice:(NSString *)deviceID completion:(void (^)(SparkDevice *, NSError *))completion
 {
-    NSString *authorization = [NSString stringWithFormat:@"Bearer %@",self.token.accessToken];
-    [self.manager.requestSerializer setValue:authorization forHTTPHeaderField:@"Authorization"];
+    [self authorize];
 
     NSString *urlPath = [NSString stringWithFormat:@"/v1/devices/%@",deviceID];
     [self.manager GET:urlPath parameters:nil success:^(AFHTTPRequestOperation *operation, id responseObject)
@@ -349,8 +352,7 @@ NSString *const kEventListenersDictIDKey = @"id";
 
 -(void)getDevices:(void (^)(NSArray *sparkDevices, NSError *error))completion
 {
-    NSString *authorization = [NSString stringWithFormat:@"Bearer %@",self.token.accessToken];
-    [self.manager.requestSerializer setValue:authorization forHTTPHeaderField:@"Authorization"];
+    [self authorize];
     
     [self.manager GET:@"/v1/devices" parameters:nil success:^(AFHTTPRequestOperation *operation, id responseObject)
      {
@@ -432,8 +434,7 @@ NSString *const kEventListenersDictIDKey = @"id";
 
 -(void)generateClaimCode:(void(^)(NSString *claimCode, NSArray *userClaimedDeviceIDs, NSError *error))completion;
 {
-    NSString *authorization = [NSString stringWithFormat:@"Bearer %@",self.token.accessToken];
-    [self.manager.requestSerializer setValue:authorization forHTTPHeaderField:@"Authorization"];
+    [self authorize];
 
     NSString *urlPath = [NSString stringWithFormat:@"/v1/device_claims"];
      [self.manager POST:urlPath parameters:nil success:^(AFHTTPRequestOperation *operation, id responseObject)
@@ -473,9 +474,7 @@ NSString *const kEventListenersDictIDKey = @"id";
 
 -(void)generateClaimCodeForOrganization:(NSString *)orgSlug andProduct:(NSString *)productSlug withActivationCode:(NSString *)activationCode completion:(void(^)(NSString *claimCode, NSArray *userClaimedDeviceIDs, NSError *error))completion;
 {
-    NSString *authorization = [NSString stringWithFormat:@"Bearer %@",self.token.accessToken];
-    [self.manager.requestSerializer setValue:authorization forHTTPHeaderField:@"Authorization"];
-
+    [self authorize];
     
     NSDictionary *params;
     if (activationCode)
@@ -757,8 +756,7 @@ NSString *const kEventListenersDictIDKey = @"id";
 -(void)publishEventWithName:(NSString *)eventName data:(NSString *)data isPrivate:(BOOL)isPrivate ttl:(NSUInteger)ttl completion:(void (^)(NSError *))completion
 {
     NSMutableDictionary *params = [NSMutableDictionary new];
-    NSString *authorization = [NSString stringWithFormat:@"Bearer %@",self.token.accessToken];
-    [self.manager.requestSerializer setValue:authorization forHTTPHeaderField:@"Authorization"];
+    [self authorize];
     
     params[@"name"]=eventName;
     params[@"data"]=data;
