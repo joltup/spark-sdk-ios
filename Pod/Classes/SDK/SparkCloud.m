@@ -423,7 +423,7 @@ NSString *const kEventListenersDictIDKey = @"id";
              completion(nil, [NSError errorWithDomain:error.domain code:operation.response.statusCode userInfo:error.userInfo]);
 
          NSData *errorData = error.userInfo[AFNetworkingOperationFailingURLResponseDataErrorKey];
-         NSDictionary *serializedFailedBody = [NSJSONSerialization JSONObjectWithData:errorData options:kNilOptions error:nil];
+         NSDictionary *serializedFailedBody = errorData ? [NSJSONSerialization JSONObjectWithData:errorData options:kNilOptions error:nil] : nil;
          NSLog(@"! getDevices %@ Failed (status code %ld): %@",operation.request.URL,operation.response.statusCode,serializedFailedBody);
      }];
 }
