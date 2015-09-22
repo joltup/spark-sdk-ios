@@ -29,6 +29,7 @@ extern NSString *const kSparkAPIBaseURL;
  *  Currently loggeed in user name, nil if no session exists
  */
 @property (nonatomic, strong, readonly) NSString* loggedInUsername;
+@property (nonatomic, readonly) BOOL isLoggedIn;
 /**
  *  Current session access token string
  */
@@ -72,11 +73,10 @@ extern NSString *const kSparkAPIBaseURL;
  *
  *  @param email      Required user name, must be a valid email address
  *  @param password   Required password
- *  @param inviteCode Optional invite code for opening an account
- *  @param orgName    Organization name to include in cloud API endpoint URL
+ *  @param orgSlug    Organization string to include in cloud API endpoint URL
  *  @param completion Completion block will be called when sign-up finished, NSError object will be passed in case of an error, nil if success
  */
--(void)signupWithOrganizationalUser:(NSString *)email password:(NSString *)password inviteCode:(NSString *)inviteCode orgName:(NSString *)orgName completion:(void (^)(NSError *))completion;
+-(void)signupWithCustomer:(NSString *)email password:(NSString *)password orgSlug:(NSString *)orgSlug completion:(void (^)(NSError *))completion;
 
 /**
  *  Logout user, remove session data
@@ -84,13 +84,14 @@ extern NSString *const kSparkAPIBaseURL;
 -(void)logout;
 
 /**
- *  Request password reset for user
+ *  Request password reset for user or customer (organization mode)
  *  command generates confirmation token and sends email to customer using org SMTP settings
  *
  *  @param email      user email
  *  @param completion Completion block with NSError object if failure, nil if success
  */
--(void)requestPasswordReset:(NSString *)orgName email:(NSString *)email completion:(void(^)(NSError *))completion;
+-(void)requestPasswordResetForCustomer:(NSString *)orgSlug email:(NSString *)email completion:(void(^)(NSError *))completion;
+-(void)requestPasswordResetForUser:(NSString *)email completion:(void(^)(NSError *))completion;
 
 #pragma mark Device management functions
 // --------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -130,8 +131,18 @@ extern NSString *const kSparkAPIBaseURL;
  *
  *  @param completion Completion block with claimCode string returned (48 random bytes base64 encoded to 64 ASCII characters), second argument is a list of the devices currently claimed by current session user and third is NSError object for failure, nil if success
  */
-
 -(void)generateClaimCode:(void(^)(NSString *claimCode, NSArray *userClaimedDeviceIDs, NSError *error))completion;
+
+
+/**
+ *  Get a short-lived claiming token for transmitting to soon-to-be-claimed device in soft AP setup process for specific product and organization (different API endpoints)
+ *  @param orgSlug - the organization slug string in URL
+ *  @param productSlug - the product slug string in URL
+ *  @param activationCode - optional (can be nil) activation code string for products in private-beta mode - see Particle Dashboard for product creators
+ *
+ *  @param completion Completion block with claimCode string returned (48 random bytes base64 encoded to 64 ASCII characters), second argument is a list of the devices currently claimed by current session user and third is NSError object for failure, nil if success
+ */
+-(void)generateClaimCodeForOrganization:(NSString *)orgSlug andProduct:(NSString *)productSlug withActivationCode:(NSString *)activationCode completion:(void(^)(NSString *claimCode, NSArray *userClaimedDeviceIDs, NSError *error))completion;
 
 
 #pragma mark Events subsystem functions
