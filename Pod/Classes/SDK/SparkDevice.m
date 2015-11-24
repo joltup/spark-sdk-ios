@@ -33,7 +33,7 @@
 {
     if (self = [super init])
     {
-        self.baseURL = [NSURL URLWithString:kSparkAPIBaseURL];
+        self.baseURL = [[SparkCloud sharedInstance] baseURL];
      
         self.requiresUpdate = NO;
         

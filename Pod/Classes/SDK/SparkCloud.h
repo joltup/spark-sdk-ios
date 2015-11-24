@@ -21,8 +21,6 @@
 #import "SparkDevice.h"
 #import "SparkEvent.h"
 
-extern NSString *const kSparkAPIBaseURL;
-
 @interface SparkCloud : NSObject
 
 /**
@@ -37,6 +35,12 @@ extern NSString *const kSparkAPIBaseURL;
 
 @property (nonatomic, strong) NSString *OAuthClientId;
 @property (nonatomic, strong) NSString *OAuthClientSecret;
+
+@property (nonatomic, strong) NSURL* baseURL;
+@property (nonatomic, strong) NSString *deviceId;
+@property (nonatomic, strong) NSString *deviceKey;
+@property (nonatomic, strong) NSString *appVersion;
+
 /**
  *  Singleton instance of SparkCloud class
  *

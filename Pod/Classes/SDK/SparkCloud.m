@@ -15,6 +15,7 @@
 #import "SparkEvent.h"
 
 
+
 #define GLOBAL_API_TIMEOUT_INTERVAL     31.0f
 //#define STAGING
 
@@ -24,12 +25,14 @@ NSString *const kSparkAPIBaseURL = @"https://api.staging.particle.io";
 NSString *const kSparkAPIBaseURL = @"https://api.particle.io";
 #endif
 
+
 NSString *const kEventListenersDictEventSourceKey = @"eventSource";
 NSString *const kEventListenersDictHandlerKey = @"eventHandler";
 NSString *const kEventListenersDictIDKey = @"id";
 
 @interface SparkCloud () <SparkAccessTokenDelegate>
-@property (nonatomic, strong) NSURL* baseURL;
+
+
 @property (nonatomic, strong) SparkAccessToken* token;
 @property (nonatomic, strong) SparkUser* user;
 @property (nonatomic, strong) AFHTTPRequestOperationManager *manager;
@@ -39,6 +42,26 @@ NSString *const kEventListenersDictIDKey = @"id";
 
 
 @implementation SparkCloud
+
+@synthesize appVersion, deviceKey, deviceId, baseURL;
+
+- (void)setAuthorizationHeaders{
+    if(!self.appVersion || !self.deviceKey || !self.deviceId || !self.baseURL)
+        [NSException raise:@"Missing important authorization parameter for SparkCloud"
+                    format:@"appversion: %@ deviceKey %@ deviceId %@ url: %@", self.appVersion, self.deviceKey, self.deviceId, self.baseURL];
+
+    [self.manager.requestSerializer setValue: self.deviceKey forHTTPHeaderField:@"devicekey"];
+    [self.manager.requestSerializer setValue: self.deviceId forHTTPHeaderField:@"deviceid"];
+    [self.manager.requestSerializer setValue: self.appVersion forHTTPHeaderField:@"appversion"];
+
+}
+
+- (void)setAuthorizationHeadersOld{
+    NSString *authorization = [NSString stringWithFormat:@"Bearer %@",self.token.accessToken];
+    [self.manager.requestSerializer setValue:authorization forHTTPHeaderField:@"Authorization"];
+}
+
+
 
 #pragma mark Class initialization and singleton instancing
 
@@ -57,7 +80,7 @@ NSString *const kEventListenersDictIDKey = @"id";
 {
     self = [super init];
     if (self) {
-        self.baseURL = [NSURL URLWithString:kSparkAPIBaseURL];
+        self.baseURL = [NSURL URLWithString: kSparkAPIBaseURL];
 //        self.loggedIn = NO;
 
         // try to restore session (user and access token)
@@ -67,9 +90,9 @@ NSString *const kEventListenersDictIDKey = @"id";
             self.token.delegate = self;
         
         // Init HTTP manager
-        self.manager = [[AFHTTPRequestOperationManager alloc] initWithBaseURL:self.baseURL];
-        self.manager.responseSerializer = [AFJSONResponseSerializer serializer];
-        [self.manager.requestSerializer setTimeoutInterval:GLOBAL_API_TIMEOUT_INTERVAL];
+//        self.manager = [[AFHTTPRequestOperationManager alloc] initWithBaseURL:self.baseURL];
+//        self.manager.responseSerializer = [AFJSONResponseSerializer serializer];
+//        [self.manager.requestSerializer setTimeoutInterval:GLOBAL_API_TIMEOUT_INTERVAL];
         
         // init event listeners internal dictionary
         self.eventListenersDict = [NSMutableDictionary new];
@@ -77,6 +100,16 @@ NSString *const kEventListenersDictIDKey = @"id";
             return nil;
     }
     return self;
+}
+
+-(void)setBaseURL:(NSURL *)baseURLOption{
+    self.manager = [[AFHTTPRequestOperationManager alloc] initWithBaseURL:baseURLOption];
+    self.manager.responseSerializer = [AFJSONResponseSerializer serializer];
+    [self.manager.requestSerializer setTimeoutInterval:GLOBAL_API_TIMEOUT_INTERVAL];
+}
+
+-(NSURL *)baseURL{
+    return self.manager.baseURL;
 }
 
 
@@ -127,6 +160,7 @@ NSString *const kEventListenersDictIDKey = @"id";
                              @"grant_type": @"password",
                              @"username": user,
                              @"password": password,
+                             @"iPad": @1,
                              };
     
 //    NSDictionary *OAuthClientCredentialsDict = [NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"OAuthClientCredentials" ofType:@"plist"]];
@@ -292,15 +326,9 @@ NSString *const kEventListenersDictIDKey = @"id";
     [self.user removeSession];
 }
 
-- (void)authorize
-{
-    NSString *authorization = [NSString stringWithFormat:@"Bearer %@",self.token.accessToken];
-    [self.manager.requestSerializer setValue:authorization forHTTPHeaderField:@"Authorization"];
-}
-
 -(void)claimDevice:(NSString *)deviceID completion:(void (^)(NSError *))completion
 {
-    [self authorize];
+    [self setAuthorizationHeaders];
 
     NSMutableDictionary *params = [NSMutableDictionary new]; //[self defaultParams];
     params[@"id"] = deviceID;
@@ -336,7 +364,7 @@ NSString *const kEventListenersDictIDKey = @"id";
 
 -(void)getDevice:(NSString *)deviceID completion:(void (^)(SparkDevice *, NSError *))completion
 {
-    [self authorize];
+    [self setAuthorizationHeaders];
 
     NSString *urlPath = [NSString stringWithFormat:@"/v1/devices/%@",deviceID];
     [self.manager GET:urlPath parameters:nil success:^(AFHTTPRequestOperation *operation, id responseObject)
@@ -371,7 +399,7 @@ NSString *const kEventListenersDictIDKey = @"id";
 
 -(void)getDevices:(void (^)(NSArray *sparkDevices, NSError *error))completion
 {
-    [self authorize];
+    [self setAuthorizationHeaders];
     
     [self.manager GET:@"/v1/devices" parameters:nil success:^(AFHTTPRequestOperation *operation, id responseObject)
      {
@@ -457,7 +485,7 @@ NSString *const kEventListenersDictIDKey = @"id";
 
 -(void)generateClaimCode:(void(^)(NSString *claimCode, NSArray *userClaimedDeviceIDs, NSError *error))completion;
 {
-    [self authorize];
+    [self setAuthorizationHeaders];
 
     NSString *urlPath = [NSString stringWithFormat:@"/v1/device_claims"];
      [self.manager POST:urlPath parameters:nil success:^(AFHTTPRequestOperation *operation, id responseObject)
@@ -500,7 +528,7 @@ NSString *const kEventListenersDictIDKey = @"id";
 
 -(void)generateClaimCodeForOrganization:(NSString *)orgSlug andProduct:(NSString *)productSlug withActivationCode:(NSString *)activationCode completion:(void(^)(NSString *claimCode, NSArray *userClaimedDeviceIDs, NSError *error))completion;
 {
-    [self authorize];
+    [self setAuthorizationHeaders];
     
     NSDictionary *params;
     if (activationCode)
@@ -794,7 +822,7 @@ NSString *const kEventListenersDictIDKey = @"id";
 -(void)publishEventWithName:(NSString *)eventName data:(NSString *)data isPrivate:(BOOL)isPrivate ttl:(NSUInteger)ttl completion:(void (^)(NSError *))completion
 {
     NSMutableDictionary *params = [NSMutableDictionary new];
-    [self authorize];
+    [self setAuthorizationHeaders];
     
     params[@"name"]=eventName;
     params[@"data"]=data;
